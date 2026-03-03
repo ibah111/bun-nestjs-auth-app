@@ -1,8 +1,6 @@
 import { TableNames } from '@/enums/db.enum';
-import { hashUtility } from '@/utils/hash';
 import type { InferAttributes, InferCreationAttributes } from 'sequelize';
 import {
-  BeforeSave,
   Column,
   CreatedAt,
   DataType,
@@ -68,12 +66,4 @@ export class User extends Model<
     allowNull: true,
   })
   declare deleted_at?: Date;
-
-  @BeforeSave
-  static async hashPassword(user: User) {
-    if (user.changed('password_hash')) {
-      user.password_hash = await hashUtility(user.password_hash)
-
-    }
-  }
 }

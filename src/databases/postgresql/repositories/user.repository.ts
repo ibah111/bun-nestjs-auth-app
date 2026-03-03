@@ -14,6 +14,19 @@ export class UserRepository {
     ) { }
 
     public async create(body: IUser): Promise<User> {
+        this.logger.log('user created successfully')
         return await this.userModel.create({ ...body });
+    }
+
+    public async findByPk(id: number) {
+        return await this.userModel.findByPk(id)
+    }
+
+    public async find(criteria: Partial<User>) {
+        return await this.userModel.findOne({ where: criteria })
+    }
+
+    public async findByEmail(email: string): Promise<User | null> {
+        return await this.userModel.findOne({ where: { email } });
     }
 }

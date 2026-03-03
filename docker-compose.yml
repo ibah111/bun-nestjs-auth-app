@@ -2,9 +2,17 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: release
+    container_name: auth-service
+    env_file:
+      - ./.env.prod
     ports:
-      - '3000:3000'
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
+      - '3001:3001'
+    networks:
+      - ibahbalezin-net
+
+networks:
+  ibahbalezin-net:
+    external: true

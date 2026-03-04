@@ -4,7 +4,6 @@ import { CacheService } from '@/modules/cache/cache.service';
 import { JwtPayload, Tokens } from '@/types/jwt-payload.type';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
-import { Op } from 'sequelize';
 import { UserRepository } from '@/databases/postgresql/repositories/user.repository';
 import { RefreshTokenRepository } from '@/databases/postgresql/repositories/refresh-token.repository';
 import {
@@ -14,6 +13,8 @@ import {
     DEFAULT_REGION,
 } from '@/utils/token-signature';
 import { ConfigService } from '@nestjs/config';
+
+const RT_EXPIRES_DAYS = 30;
 
 @Injectable()
 export class TokenService {
@@ -47,29 +48,32 @@ export class TokenService {
         return DEFAULT_REGION;
     }
 
-    async generateTokens(user_id: number, email: string, user_agent?: string | null): Promise<Tokens> {
+    private async generateAccessToken(user_id: number, email: string, user_agent?: string | null): Promise<string> {
         const jti = randomBytes(16).toString('hex');
-        this.logger.log(`Генерация токенов для пользователя ${user_id}`);
-        this.logger.log(`Получен user-agent: ${user_agent || 'не указан'}`);
         const region = this.detectRegionByUserAgent(user_agent);
-        this.logger.log(`Определённый регион: ${region}`);
         const jwt_payload: JwtPayload = {
             user_id,
             email,
             jti,
         };
-        console.log({ user_id, jti });
-
         const raw_access_token = await this.jwtService.signAsync(jwt_payload, {
             secret: this.access_secret,
             expiresIn: '15m',
         });
+        return appendTokenSignature(raw_access_token, region);
+    }
+
+    async generateTokens(user_id: number, email: string, user_agent?: string | null): Promise<Tokens> {
+        this.logger.log(`Генерация токенов для пользователя ${user_id}`);
+        this.logger.log(`Получен user-agent: ${user_agent || 'не указан'}`);
+        const region = this.detectRegionByUserAgent(user_agent);
+        this.logger.log(`Определённый регион: ${region}`);
 
         const raw_refresh_token = randomBytes(32).toString('hex');
         const token_hash = await argon2.hash(raw_refresh_token);
 
         const expires_at = new Date();
-        expires_at.setDate(expires_at.getDate() + 7);
+        expires_at.setDate(expires_at.getDate() + RT_EXPIRES_DAYS);
 
         await this.rtRepository.create({
             user_id,
@@ -79,9 +83,12 @@ export class TokenService {
             ip_address: null,
         });
 
+        const access_token = await this.generateAccessToken(user_id, email, user_agent);
+        const refresh_token = appendTokenSignature(raw_refresh_token, region);
+
         return {
-            access_token: appendTokenSignature(raw_access_token, region),
-            refresh_token: appendTokenSignature(raw_refresh_token, region),
+            access_token,
+            refresh_token,
         };
     }
 
@@ -91,16 +98,10 @@ export class TokenService {
         }
         this.logger.log('Запрос обновления токенов');
         this.logger.log(`Получен user-agent при refresh: ${user_agent || 'не указан'}`);
-        console.log({ refresh_token_length: refresh_token.length });
         const normalized_refresh_token = normalizeSignedToken(refresh_token);
 
         const all_tokens = await this.rtRepository.find({
-            where: {
-                revoked_at: null,
-                expires_at: {
-                    [Op.gt]: new Date(),
-                },
-            },
+            where: { revoked_at: null },
         });
 
         let found_token = null;
@@ -111,7 +112,7 @@ export class TokenService {
                     found_token = token_record;
                     break;
                 }
-            } catch (error) {
+            } catch {
                 continue;
             }
         }
@@ -120,18 +121,28 @@ export class TokenService {
             throw new UnauthorizedException('Недействительный refresh token');
         }
 
-        found_token.revoked_at = new Date();
-        await found_token.save();
-        this.logger.log('Старый refresh token отозван');
-        console.log({ refresh_token_id: found_token.id });
+        const now = new Date();
+        if (found_token.expires_at <= now) {
+            await this.rtRepository.destroy(found_token.id!);
+            this.logger.log(`Refresh token истёк, удалён из БД: id=${found_token.id}`);
+            throw new UnauthorizedException('Refresh token истёк. Требуется повторный вход.');
+        }
 
-        const user_id = found_token.user_id;
-        const user = await this.userRepository.findByPk(user_id);
+        const new_expires_at = new Date();
+        new_expires_at.setDate(new_expires_at.getDate() + RT_EXPIRES_DAYS);
+        await this.rtRepository.updateExpiresAt(found_token.id!, new_expires_at);
+        this.logger.log(`Refresh token продлён на +${RT_EXPIRES_DAYS} дней: id=${found_token.id}`);
+
+        const user = await this.userRepository.findByPk(found_token.user_id);
         if (!user) {
             throw new UnauthorizedException('Пользователь не найден');
         }
 
-        return await this.generateTokens(user_id, user.email, user_agent);
+        const access_token = await this.generateAccessToken(user.id!, user.email, user_agent);
+        return {
+            access_token,
+            refresh_token,
+        };
     }
 
     async revoke(access_token: string): Promise<void> {

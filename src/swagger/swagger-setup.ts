@@ -9,8 +9,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function swaggerSetup(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle('back-office-auth')
-    .setDescription('Back office auth microservice')
+    .setTitle('auth-service')
+    .setDescription('Auth service microservice')
     .addBearerAuth({
       type: 'http',
       bearerFormat: 'Bearer'

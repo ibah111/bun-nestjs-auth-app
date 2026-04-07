@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "back-office-auth",
-    "description": "Back office auth microservice",
+    "title": "auth-service",
+    "description": "Auth service microservice",
     "version": "0.0.1",
     "contact": {}
   },

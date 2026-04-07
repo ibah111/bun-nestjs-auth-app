@@ -1,17 +1,41 @@
-version: '3.8'
-
 services:
+  back-office-postgres:
+    image: postgres:16-alpine
+    container_name: back-office-postgres
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    ports:
+      - '55432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    networks:
+      - ibahbalezin-net
+
   app:
     build:
       context: .
       target: release
     container_name: auth-service
+    restart: unless-stopped
     env_file:
       - ./.env.prod
+    depends_on:
+      back-office-postgres:
+        condition: service_healthy
     ports:
       - '3001:3001'
     networks:
       - ibahbalezin-net
+
+volumes:
+  postgres-data:
 
 networks:
   ibahbalezin-net:

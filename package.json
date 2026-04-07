@@ -9,8 +9,10 @@
   "module": "src/main.ts",
   "scripts": {
     "build": "NODE_ENV=production bun run scripts/build.ts",
+    "db:migrate": "node scripts/migrate.cjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "NODE_ENV=development tsc && bun .",
+    "start:container": "bun run db:migrate && bun run start:prod",
     "start:dev": "NODE_ENV=development tsc-watch --onSuccess \"bun .\"",
     "start:debug": "NODE_ENV=development tsc-watch --onSuccess \"bun . --inspect\"",
     "start:prod": "NODE_ENV=production bun dist/main.js",

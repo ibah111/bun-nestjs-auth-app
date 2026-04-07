@@ -11,8 +11,10 @@ COPY . .
 RUN bun run build
 
 FROM base AS release
+RUN apk add --no-cache nodejs
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
-RUN bun install swagger-ui-dist --no-save
-EXPOSE ${PORT}
-CMD ["bun", "start:prod"]
+COPY --from=build /usr/src/app/migrations ./migrations
+COPY --from=build /usr/src/app/scripts ./scripts
+EXPOSE 3001
+CMD ["bun", "run", "start:container"]

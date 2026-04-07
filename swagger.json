@@ -1,0 +1,331 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "back-office-auth",
+    "description": "Back office auth microservice",
+    "version": "0.0.1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "paths": {
+    "/api/v1/cache/{key}": {
+      "get": {
+        "operationId": "CacheController_get_v1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "example": "test",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Cache"
+        ]
+      },
+      "post": {
+        "operationId": "CacheController_set_v1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "example": "test",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CacheSetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Cache"
+        ]
+      },
+      "delete": {
+        "operationId": "CacheController_del_v1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "example": "test",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Cache"
+        ]
+      }
+    },
+    "/api/v1/healthcheck": {
+      "get": {
+        "operationId": "HealthcheckController_getHealthcheck_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Application healthcheck",
+        "tags": [
+          "Healthcheck"
+        ]
+      }
+    },
+    "/api/v1/login": {
+      "post": {
+        "description": "Enter login + password, to get access + refresh tokens",
+        "operationId": "LoginController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "User Log in ",
+        "tags": [
+          "Login"
+        ]
+      }
+    },
+    "/api/v1/login/deactivate": {
+      "patch": {
+        "deprecated": true,
+        "operationId": "LoginController_deactivate_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Login"
+        ]
+      }
+    },
+    "/api/v1/register": {
+      "post": {
+        "operationId": "RegisterController_register_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Register new User",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
+    "/api/v1/token/refresh": {
+      "post": {
+        "operationId": "TokenController_refresh_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh token",
+        "tags": [
+          "Token"
+        ]
+      }
+    },
+    "/api/v1/token/revoke": {
+      "post": {
+        "operationId": "TokenController_revoke_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revoke current bearer token",
+        "tags": [
+          "Token"
+        ]
+      }
+    },
+    "/api/v1/token/validate": {
+      "post": {
+        "description": "Using this endpoint for validating tokens.",
+        "operationId": "TokenController_validate_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Validate token",
+        "tags": [
+          "Token"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "Bearer",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "CacheSetDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "example": {
+              "value": "test"
+            },
+            "type": "object"
+          },
+          "ttl": {
+            "example": 60,
+            "type": "number"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "password": {
+            "example": "password123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "RefreshTokenDTO": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "example": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "fio": {
+            "example": "Иван Иванов",
+            "type": "string"
+          },
+          "email": {
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "password": {
+            "example": "password123",
+            "type": "string"
+          },
+          "position": {
+            "example": "Developer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fio",
+          "email",
+          "password",
+          "position"
+        ]
+      }
+    }
+  }
+}

@@ -3,20 +3,20 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
-import { normalizeSignedToken } from '@/utils/token-signature';
+import { normalizeToken } from '@/utils/token-signature';
 
 @Injectable()
 export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
-    const signedTokenExtractor = (req: Request): string | null => {
+    const tokenExtractor = (req: Request): string | null => {
       const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
       if (!token) {
         return null;
       }
-      return normalizeSignedToken(token);
+      return normalizeToken(token);
     };
     super({
-      jwtFromRequest: signedTokenExtractor,
+      jwtFromRequest: tokenExtractor,
       secretOrKey: (process.env.JWT_ACCESS_SECRET || 'jwt_access_secret') as string,
       ignoreExpiration: false,
     });

@@ -6,12 +6,7 @@ import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { UserRepository } from '@/databases/postgresql/repositories/user.repository';
 import { RefreshTokenRepository } from '@/databases/postgresql/repositories/refresh-token.repository';
-import {
-    appendTokenSignature,
-    normalizeSignedToken,
-    RegionCode,
-    DEFAULT_REGION,
-} from '@/utils/token-signature';
+import { normalizeToken } from '@/utils/token-signature';
 import { ConfigService } from '@nestjs/config';
 
 const RT_EXPIRES_DAYS = 30;
@@ -31,26 +26,8 @@ export class TokenService {
     }
     private readonly logger = new Logger(TokenService.name);
 
-    private detectRegionByUserAgent(user_agent?: string | null): RegionCode {
-        if (!user_agent) {
-            return DEFAULT_REGION;
-        }
-        const normalizedUA = user_agent.toLowerCase();
-
-        if (normalizedUA.includes('ukr')) {
-            return 'uk';
-        }
-
-        if (normalizedUA.includes('eu') || normalizedUA.includes('euro')) {
-            return 'eu';
-        }
-
-        return DEFAULT_REGION;
-    }
-
-    private async generateAccessToken(user_id: number, email: string, user_agent?: string | null): Promise<string> {
+    private async generateAccessToken(user_id: number, email: string): Promise<string> {
         const jti = randomBytes(16).toString('hex');
-        const region = this.detectRegionByUserAgent(user_agent);
         const jwt_payload: JwtPayload = {
             user_id,
             email,
@@ -60,14 +37,12 @@ export class TokenService {
             secret: this.access_secret,
             expiresIn: '15m',
         });
-        return appendTokenSignature(raw_access_token, region);
+        return raw_access_token;
     }
 
     async generateTokens(user_id: number, email: string, user_agent?: string | null): Promise<Tokens> {
         this.logger.log(`Генерация токенов для пользователя ${user_id}`);
         this.logger.log(`Получен user-agent: ${user_agent || 'не указан'}`);
-        const region = this.detectRegionByUserAgent(user_agent);
-        this.logger.log(`Определённый регион: ${region}`);
 
         const raw_refresh_token = randomBytes(32).toString('hex');
         const token_hash = await argon2.hash(raw_refresh_token);
@@ -83,8 +58,8 @@ export class TokenService {
             ip_address: null,
         });
 
-        const access_token = await this.generateAccessToken(user_id, email, user_agent);
-        const refresh_token = appendTokenSignature(raw_refresh_token, region);
+        const access_token = await this.generateAccessToken(user_id, email);
+        const refresh_token = raw_refresh_token;
 
         return {
             access_token,
@@ -98,7 +73,7 @@ export class TokenService {
         }
         this.logger.log('Запрос обновления токенов');
         this.logger.log(`Получен user-agent при refresh: ${user_agent || 'не указан'}`);
-        const normalized_refresh_token = normalizeSignedToken(refresh_token);
+        const normalized_refresh_token = normalizeToken(refresh_token);
 
         const all_tokens = await this.rtRepository.find({
             where: { revoked_at: null },
@@ -138,7 +113,7 @@ export class TokenService {
             throw new UnauthorizedException('Пользователь не найден');
         }
 
-        const access_token = await this.generateAccessToken(user.id!, user.email, user_agent);
+        const access_token = await this.generateAccessToken(user.id!, user.email);
         return {
             access_token,
             refresh_token,
@@ -146,7 +121,7 @@ export class TokenService {
     }
 
     async revoke(access_token: string): Promise<void> {
-        const normalized_access_token = normalizeSignedToken(access_token);
+        const normalized_access_token = normalizeToken(access_token);
         try {
             this.logger.log('Запрос отзыва access токена');
             const payload = await this.jwtService.verifyAsync(normalized_access_token, {
@@ -183,7 +158,7 @@ export class TokenService {
     }
 
     async validate(access_token: string): Promise<any> {
-        const normalized_access_token = normalizeSignedToken(access_token);
+        const normalized_access_token = normalizeToken(access_token);
         try {
             if (access_token === 'qbeek-dev-test-token') {
                 return {

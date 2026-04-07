@@ -16,5 +16,5 @@ COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/migrations ./migrations
 COPY --from=build /usr/src/app/scripts ./scripts
-EXPOSE 3001
+EXPOSE 30111
 CMD ["bun", "run", "start:container"]

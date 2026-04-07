@@ -30,7 +30,7 @@ services:
       auth-service-postgres:
         condition: service_healthy
     ports:
-      - '30111:3001'
+      - '30111:30111'
     networks:
       - ibahbalezin-net
 

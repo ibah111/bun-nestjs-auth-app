@@ -11,13 +11,13 @@ export const node_env: string = process.env.NODE_ENV || 'development';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger(bootstrap.name);
-  const PORT = process.env.PORT ?? 3001;
+  const PORT = process.env.PORT ?? 30111;
   app.enableCors({
-    origin: '*'
-  })
+    origin: '*',
+  });
   app.useGlobalFilters(new CustomHttpExceptionFilter());
-  app.setGlobalPrefix(API_PATH)
-  app.enableVersioning({ type: VersioningType.URI })
+  app.setGlobalPrefix(API_PATH);
+  app.enableVersioning({ type: VersioningType.URI });
 
   SwaggerSetup(app);
   await app.listen(PORT, '0.0.0.0');

@@ -160,7 +160,7 @@ export class TokenService {
     async validate(access_token: string): Promise<any> {
         const normalized_access_token = normalizeToken(access_token);
         try {
-            if (access_token === 'qbeek-dev-test-token') {
+            if (access_token === 'test-dev-token') {
                 return {
                     user_id: 1,
                     email: 'user@example.com',

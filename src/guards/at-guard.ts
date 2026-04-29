@@ -34,11 +34,11 @@ export class AtGuard extends AuthGuard('jwt') {
         const request = context.switchToHttp().getRequest();
 
         if (node_env === 'development') {
-            const TEST_DEV_TOKEN = 'qbeek-dev-test-token';
+            const TEST_DEV_TOKEN = 'test-dev-token';
             const authHeader: string | undefined = request.headers['authorization'];
 
             if (authHeader === `Bearer ${TEST_DEV_TOKEN}`) {
-                this.logger.warn('Использован dev-тестовый токен qbeek-dev-test-token, проверки JWT пропущены');
+                this.logger.warn('Использован dev-тестовый токен test-dev-token, проверки JWT пропущены');
 
                 const testUser: JwtPayload = {
                     user_id: 1,
